@@ -8,3 +8,11 @@
 - 编辑器：VSCode
 - 包管理器：uv 或 cargo
 - 语法检查、格式化：Ruff + Pylance
+
+## 知识图谱的创建
+
+```bash
+python src/build_graph.py
+```
+
+所得的结果会保存在`./kg_output/`下的csv文件中。

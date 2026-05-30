@@ -1,4 +1,12 @@
 __pycache__/
+.vscode/
+.DS_Store
 AGENTS.md
 CLAUDE.md
 .claude/
+
+/datasets/table1_user.txt
+/datasets/table2_jd.txt
+/datasets/table3_action.txt
+
+*.csv
