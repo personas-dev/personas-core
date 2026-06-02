@@ -1,0 +1,40 @@
+project:
+  name: hr_kg_gnn
+  seed: 42
+  output_dir: experiments/runs
+
+data:
+  candidate_path: data/processed/candidates.jsonl
+  job_path: data/processed/jobs.jsonl
+  interaction_path: data/processed/interactions.jsonl
+  split_strategy: time
+  valid_ratio: 0.1
+  test_ratio: 0.2
+
+model:
+  name: spc_hgt
+  config_path: configs/model/spc_hgt.yaml
+
+training:
+  epochs: 50
+  batch_size: 512
+  lr: 0.001
+  weight_decay: 0.00001
+  early_stopping_patience: 5
+  num_workers: 4
+  mixed_precision: true
+
+negative_sampling:
+  random: 2
+  same_city: 1
+  same_industry: 1
+  bm25_hard: 2
+  sbert_hard: 2
+  recent_job: 1
+
+loss_weights:
+  bpr: 1.0
+  bce: 0.5
+  contrastive: 0.2
+  kg_reconstruction: 0.1
+  reg: 0.00001

@@ -10,3 +10,20 @@ CLAUDE.md
 /datasets/table3_action.txt
 
 *.csv
+# Large local datasets and generated training artifacts
+/data/
+/datasets/
+/kg_output/
+/experiments/runs/
+*.pt
+*.pth
+*.ckpt
+*.parquet
+*.npy
+*.npz
+
+# Keep curated reference tables even though generic CSV outputs are ignored.
+!hr_kg_gnn_skill_pack/references/references.csv
+!hr_kg_gnn_skill_pack/references/local_manifest.csv
+!hr_kg_gnn_skill_pack/skills/hr-kg-gnn/references/references.csv
+!hr_kg_gnn_skill_pack/skills/hr-kg-gnn/references/local_manifest.csv

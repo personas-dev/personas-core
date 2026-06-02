@@ -1,0 +1,16 @@
+inference:
+  model_path: checkpoints/best.pt
+  ann_index_path: indexes/job.faiss
+  graph_snapshot_path: graph_snapshots/latest
+  mode: full
+  recall_top_n: 200
+  top_k: 10
+  enable_explanation: true
+  cache:
+    candidate_embedding: true
+    job_embedding: true
+    path_features: true
+  latency_budget_ms:
+    ann_recall: 50
+    rerank: 200
+    explanation: 100

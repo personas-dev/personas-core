@@ -1,0 +1,14 @@
+evaluation:
+  checkpoint_path: checkpoints/best.pt
+  split: test
+  top_k: [5, 10, 20, 50]
+  metrics:
+    - recall
+    - precision
+    - ndcg
+    - mrr
+    - hitrate
+    - auc
+  seeds: [42, 2025, 3407]
+  save_predictions: true
+  output_path: experiments/tables/baseline_comparison.csv

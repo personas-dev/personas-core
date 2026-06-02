@@ -1,0 +1,31 @@
+seed: 42
+output_dir: experiments/runs
+run_name: baseline_sample_gpu
+models:
+  - rule
+  - bm25
+  - semantic_hash
+  - lightgcn
+  - spc_hgt
+
+data:
+  datasets_zip: data/datasets.zip
+  kg_output_zip: data/kg_output.zip
+  max_candidates: 0
+  max_jobs: 3000
+  max_interactions: 120000
+
+semantic_hash:
+  dim: 512
+
+gnn:
+  device: cuda
+  embedding_dim: 64
+  num_layers: 2
+  epochs: 20
+  batch_size: 512
+  lr: 0.003
+  weight_decay: 0.00001
+
+eval:
+  k: 10

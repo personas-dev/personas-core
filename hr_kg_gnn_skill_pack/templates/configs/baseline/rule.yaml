@@ -1,0 +1,10 @@
+baseline:
+  name: rule
+  weights:
+    skill: 0.5
+    education: 0.2
+    experience: 0.2
+    city: 0.1
+  skill:
+    required_weight: 1.0
+    preferred_weight: 0.3

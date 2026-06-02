@@ -1,0 +1,13 @@
+baseline:
+  name: bm25
+  tokenizer: jieba
+  fields:
+    candidate:
+      - skills
+      - project_domains
+      - resume_text
+    job:
+      - required_skills
+      - preferred_skills
+      - jd_text
+  top_k: 100

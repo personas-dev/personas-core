@@ -1,0 +1,53 @@
+# src_layout 代码骨架说明
+
+`src_layout/src/jobmatch_gnn/` 是推荐的代码结构骨架。复制到项目根目录的 `src/jobmatch_gnn/` 后，Agent 应按 TODO 实现。
+
+```text
+src/jobmatch_gnn/
+  data/
+    schema.py
+    validate.py
+    preprocess.py
+    skill_normalizer.py
+    build_graph.py
+    negative_sampling.py
+    split.py
+  features/
+    text_encoder.py
+    structured_encoder.py
+    path_features.py
+    rule_features.py
+  models/
+    spc_hgt.py
+    lightgcn.py
+    kgcn.py
+    kgat.py
+    scorer.py
+    losses.py
+  baselines/
+    rule_matcher.py
+    bm25_matcher.py
+    sbert_matcher.py
+    node2vec_matcher.py
+  training/
+    train.py
+    trainer.py
+    checkpoint.py
+  evaluation/
+    metrics.py
+    evaluate.py
+    ablation.py
+  inference/
+    index_builder.py
+    ranker.py
+    service.py
+  explanation/
+    explain.py
+    path_extractor.py
+    skill_gap.py
+  utils/
+    seed.py
+    logging.py
+    config.py
+    io.py
+```

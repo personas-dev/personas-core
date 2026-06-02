@@ -3,8 +3,17 @@ name = "personas-core"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
-dependencies = []
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+gpu = [
+    "torch>=2.5",
+]
 
 [tool.ruff]
 line-length = 150
@@ -23,3 +32,8 @@ default = true
 include = ["src"]
 exclude = ["**/__pycache__", ".venv", "**/.*"]
 typeCheckingMode = "standard"
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

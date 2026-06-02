@@ -1,0 +1,322 @@
+[
+  {
+    "path": "CHANGELOG.md",
+    "bytes": 228
+  },
+  {
+    "path": "MANIFEST.md",
+    "bytes": 1644
+  },
+  {
+    "path": "MODEL_CARD.md",
+    "bytes": 789
+  },
+  {
+    "path": "README.md",
+    "bytes": 1668
+  },
+  {
+    "path": "docs/00_path_function_map.md",
+    "bytes": 4069
+  },
+  {
+    "path": "docs/01_algorithm_api.md",
+    "bytes": 2894
+  },
+  {
+    "path": "docs/02_kg_schema.md",
+    "bytes": 3592
+  },
+  {
+    "path": "docs/03_model_design.md",
+    "bytes": 3228
+  },
+  {
+    "path": "docs/04_training_evaluation.md",
+    "bytes": 1946
+  },
+  {
+    "path": "docs/05_baseline_and_ablation.md",
+    "bytes": 2555
+  },
+  {
+    "path": "docs/06_innovation_and_advantage.md",
+    "bytes": 2924
+  },
+  {
+    "path": "docs/07_deployment.md",
+    "bytes": 1518
+  },
+  {
+    "path": "docs/08_versioning_and_workflow.md",
+    "bytes": 1399
+  },
+  {
+    "path": "docs/09_document_maintenance.md",
+    "bytes": 1490
+  },
+  {
+    "path": "pyproject.toml",
+    "bytes": 649
+  },
+  {
+    "path": "references/reading_priority.md",
+    "bytes": 1309
+  },
+  {
+    "path": "references/references.csv",
+    "bytes": 9874
+  },
+  {
+    "path": "references/references.md",
+    "bytes": 8879
+  },
+  {
+    "path": "references/search_queries.md",
+    "bytes": 1175
+  },
+  {
+    "path": "references/uploaded_source_notes.md",
+    "bytes": 1501
+  },
+  {
+    "path": "skills/hr_kg_gnn/SKILL.md",
+    "bytes": 5784
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/__init__.py",
+    "bytes": 38
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/baselines/__init__.py",
+    "bytes": 38
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/baselines/bm25_matcher.py",
+    "bytes": 424
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/baselines/node2vec_matcher.py",
+    "bytes": 261
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/baselines/rule_matcher.py",
+    "bytes": 565
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/baselines/sbert_matcher.py",
+    "bytes": 449
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/data/__init__.py",
+    "bytes": 38
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/data/build_graph.py",
+    "bytes": 399
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/data/negative_sampling.py",
+    "bytes": 467
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/data/preprocess.py",
+    "bytes": 264
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/data/schema.py",
+    "bytes": 1654
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/data/skill_normalizer.py",
+    "bytes": 763
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/data/split.py",
+    "bytes": 578
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/data/validate.py",
+    "bytes": 592
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/evaluation/__init__.py",
+    "bytes": 38
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/evaluation/ablation.py",
+    "bytes": 193
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/evaluation/evaluate.py",
+    "bytes": 233
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/evaluation/metrics.py",
+    "bytes": 1129
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/explanation/__init__.py",
+    "bytes": 38
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/explanation/explain.py",
+    "bytes": 956
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/explanation/path_extractor.py",
+    "bytes": 251
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/explanation/skill_gap.py",
+    "bytes": 356
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/features/__init__.py",
+    "bytes": 38
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/features/path_features.py",
+    "bytes": 765
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/features/rule_features.py",
+    "bytes": 1310
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/features/structured_encoder.py",
+    "bytes": 300
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/features/text_encoder.py",
+    "bytes": 268
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/inference/__init__.py",
+    "bytes": 38
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/inference/index_builder.py",
+    "bytes": 211
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/inference/ranker.py",
+    "bytes": 444
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/inference/service.py",
+    "bytes": 165
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/models/__init__.py",
+    "bytes": 38
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/models/kgat.py",
+    "bytes": 253
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/models/kgcn.py",
+    "bytes": 257
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/models/lightgcn.py",
+    "bytes": 268
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/models/losses.py",
+    "bytes": 420
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/models/scorer.py",
+    "bytes": 381
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/models/spc_hgt.py",
+    "bytes": 755
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/training/__init__.py",
+    "bytes": 38
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/training/checkpoint.py",
+    "bytes": 206
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/training/train.py",
+    "bytes": 187
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/training/trainer.py",
+    "bytes": 219
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/utils/__init__.py",
+    "bytes": 38
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/utils/config.py",
+    "bytes": 258
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/utils/io.py",
+    "bytes": 347
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/utils/logging.py",
+    "bytes": 238
+  },
+  {
+    "path": "src_layout/src/jobmatch_gnn/utils/seed.py",
+    "bytes": 374
+  },
+  {
+    "path": "src_layout/tests/README.md",
+    "bytes": 526
+  },
+  {
+    "path": "src_layout/tree.md",
+    "bytes": 949
+  },
+  {
+    "path": "templates/CHANGELOG.md",
+    "bytes": 228
+  },
+  {
+    "path": "templates/MODEL_CARD.md",
+    "bytes": 789
+  },
+  {
+    "path": "templates/configs/baseline/bm25.yaml",
+    "bytes": 213
+  },
+  {
+    "path": "templates/configs/baseline/rule.yaml",
+    "bytes": 162
+  },
+  {
+    "path": "templates/configs/baseline/sbert.yaml",
+    "bytes": 157
+  },
+  {
+    "path": "templates/configs/eval.yaml",
+    "bytes": 284
+  },
+  {
+    "path": "templates/configs/infer.yaml",
+    "bytes": 363
+  },
+  {
+    "path": "templates/configs/model/spc_hgt.yaml",
+    "bytes": 518
+  },
+  {
+    "path": "templates/configs/train.yaml",
+    "bytes": 701
+  },
+  {
+    "path": "templates/experiments/experiment_record_template.md",
+    "bytes": 641
+  }
+]

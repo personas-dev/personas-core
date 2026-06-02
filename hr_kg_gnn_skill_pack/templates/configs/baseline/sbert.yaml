@@ -1,0 +1,6 @@
+baseline:
+  name: sbert
+  model_name: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+  normalize_embeddings: true
+  batch_size: 64
+  top_k: 100

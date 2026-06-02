@@ -1,0 +1,4 @@
+interface:
+  display_name: "HR KG-GNN"
+  short_description: "Train HR knowledge graph GNN matchers"
+  default_prompt: "Use $hr-kg-gnn to train and compare HR person-job matching baselines."
