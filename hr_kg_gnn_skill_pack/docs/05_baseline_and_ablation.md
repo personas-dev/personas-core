@@ -106,3 +106,19 @@ Config: `configs/train_gnn.yaml`
 | SPC-HGT-lite |  |  |  |  |  | skipped: PyTorch not installed |
 
 当前最强已完成 baseline 是 Rule。SPC-HGT 尚未训练，不能宣称超过 baseline。
+
+
+## 10. 2026-06-04 GPU Run Result
+
+Run: `experiments/runs/baseline_sample_gpu`
+Runtime: `.venv`, Python 3.12.13, `torch==2.12.0+cu130`, CUDA GPU 6
+
+| Model | Recall@10 | Precision@10 | NDCG@10 | MRR | HitRate@10 | Status |
+|---|---:|---:|---:|---:|---:|---|
+| Rule | 0.2192 | 0.0219 | 0.1211 | 0.1055 | 0.2192 | completed |
+| BM25 | 0.0639 | 0.0064 | 0.0393 | 0.0402 | 0.0639 | completed |
+| semantic_hash | 0.0137 | 0.0014 | 0.0048 | 0.0046 | 0.0137 | completed SBERT fallback |
+| LightGCN | 0.0046 | 0.0005 | 0.0046 | 0.0060 | 0.0046 | completed on CUDA |
+| SPC-HGT-lite | 0.2603 | 0.0260 | 0.1310 | 0.1065 | 0.2603 | completed on CUDA |
+
+SPC-HGT-lite 当前超过最强已完成 baseline Rule，NDCG@10 绝对提升 `+0.0099`，相对提升约 `+8.2%`。LightGCN 单独效果弱，说明稀疏行为图需要技能路径和结构化匹配特征增强。

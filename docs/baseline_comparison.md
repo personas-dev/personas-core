@@ -1,8 +1,10 @@
-# Baseline Comparison: HR KG-GNN Sample Run
+# Baseline Comparison: HR KG-GNN GPU Run
 
-Date: 2026-06-02
+Date: 2026-06-04
 Run directory: `experiments/runs/baseline_sample_gpu`
 Config: `configs/train_gnn.yaml`
+Environment: `.venv` created by `uv`, Python 3.12.13, `torch==2.12.0+cu130`
+Device: CUDA GPU 6, NVIDIA RTX PRO 6000 Blackwell Server Edition
 
 ## Dataset Slice
 
@@ -37,47 +39,48 @@ The source action table has no explicit timestamp in the sampled fields, so the 
 | Rule | completed | Skill-path and structured feature overlap baseline. |
 | BM25 | completed | Dependency-free sparse lexical retrieval over job text. |
 | semantic_hash | completed | Dependency-free hashed TF-IDF cosine fallback for SBERT. This is not a real SBERT model. |
-| LightGCN | implemented, not trained | Training code exists, but PyTorch is not installed in the current Python environment. |
-| SPC-HGT-lite | implemented, not trained | Skill-path feature-enhanced GNN prototype exists, but PyTorch is not installed. |
+| LightGCN | completed on CUDA | Candidate-job interaction graph only. |
+| SPC-HGT-lite | completed on CUDA | LightGCN backbone plus skill-path/rule feature MLP. |
 
 ## Metrics
 
-| Model | Recall@10 | Precision@10 | NDCG@10 | MRR | HitRate@10 |
-|---|---:|---:|---:|---:|---:|
-| Rule | 0.2192 | 0.0219 | 0.1211 | 0.1055 | 0.2192 |
-| BM25 | 0.0639 | 0.0064 | 0.0393 | 0.0402 | 0.0639 |
-| semantic_hash | 0.0137 | 0.0014 | 0.0048 | 0.0046 | 0.0137 |
-| LightGCN | skipped | skipped | skipped | skipped | skipped |
-| SPC-HGT-lite | skipped | skipped | skipped | skipped | skipped |
+| Model | Recall@10 | Precision@10 | NDCG@10 | MRR | HitRate@10 | Train loss | Device |
+|---|---:|---:|---:|---:|---:|---:|---|
+| Rule | 0.2192 | 0.0219 | 0.1211 | 0.1055 | 0.2192 |  | CPU |
+| BM25 | 0.0639 | 0.0064 | 0.0393 | 0.0402 | 0.0639 |  | CPU |
+| semantic_hash | 0.0137 | 0.0014 | 0.0048 | 0.0046 | 0.0137 |  | CPU |
+| LightGCN | 0.0046 | 0.0005 | 0.0046 | 0.0060 | 0.0046 | 0.4217 | CUDA |
+| SPC-HGT-lite | 0.2603 | 0.0260 | 0.1310 | 0.1065 | 0.2603 | 0.2507 | CUDA |
 
-Best completed baseline: **Rule**, with `NDCG@10 = 0.1211`.
+Best completed baseline before GNN: **Rule**, with `NDCG@10 = 0.1211`.
 
-## GPU / GNN Training Status
+Best completed model after GPU training: **SPC-HGT-lite**, with `NDCG@10 = 0.1310`.
 
-Available GPUs were checked with `nvidia-smi`; several GPUs were effectively idle. GPU training could not start because the current Python 3.13 environment did not have PyTorch installed.
+Absolute gain over Rule: `+0.0099 NDCG@10`. Relative gain: about `+8.2%`.
 
-A PyTorch install was attempted with:
+## Interpretation
+
+SPC-HGT-lite beats the strongest completed baseline on this sampled split. The gain is modest but meaningful because all models use the same candidate/job sample and held-out positives.
+
+LightGCN alone performs poorly. This indicates that the sampled interaction graph is too sparse for pure collaborative filtering. The useful signal comes from combining graph embeddings with explicit skill-path and structured matching features.
+
+The current result supports the direction of skill-path enhanced graph ranking, but it is still a prototype rather than the full SPC-HGT design. A stronger claim requires:
+
+- multiple seeds,
+- true timestamp splits,
+- larger job universes,
+- hard-negative mining,
+- real SBERT baseline,
+- full heterogeneous message passing over Candidate, Job, Skill, City, Industry, Education, and Experience nodes.
+
+## Training Command
 
 ```bash
-python -m pip install 'torch>=2.7'
-```
-
-The install began downloading the CUDA 13 `torch-2.12.0` wheel but stalled for a long period with no progress, so the process was terminated to avoid blocking the workspace. The training CLI now records this condition explicitly:
-
-```json
-{"model": "torch_gnn", "status": "skipped", "reason": "PyTorch is not installed; install torch to train GPU GNN models."}
+uv venv --python 3.12 .venv
+uv pip install --python .venv/bin/python --torch-backend cu130 -e . pytest ruff 'torch>=2.12'
+CUDA_VISIBLE_DEVICES=6 .venv/bin/python -m jobmatch_gnn.training.train --config configs/train_gnn.yaml
 ```
 
 ## Conclusion
 
-The current runnable baseline is complete, but the main GNN model has **not** been trained yet. Therefore, the project must not claim SPC-HGT effectiveness or improvement over baseline at this point.
-
-On the sampled split, Rule is the strongest completed method. This suggests the current data slice has strong structured matching signals and sparse text matching is weak without Chinese segmentation or pretrained sentence embeddings.
-
-## Next Steps
-
-1. Install a working CUDA PyTorch build for Python 3.13, or create a Python 3.12/3.11 environment with a known stable PyTorch CUDA wheel.
-2. Run `PYTHONPATH=src python -m jobmatch_gnn.training.train --config configs/train_gnn.yaml` again; LightGCN and SPC-HGT-lite will train automatically once `torch` is importable.
-3. Replace `semantic_hash` with real SBERT/SentenceTransformer embeddings when dependencies and model weights are available.
-4. Improve Chinese tokenization and skill normalization before interpreting BM25 or semantic baseline quality.
-5. Move from row-order split to true time split if timestamped behavior logs become available.
+The GPU training path is now functional. On the current sampled dataset, SPC-HGT-lite is the best completed model and exceeds the strongest baseline. The next engineering step is to make the comparison more robust with multi-seed runs and stronger semantic/hard-negative baselines.

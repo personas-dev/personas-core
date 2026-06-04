@@ -1,7 +1,7 @@
 """Dataset loading and feature extraction for personas-core HR data."""
 from __future__ import annotations
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 import csv

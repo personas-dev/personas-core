@@ -27,3 +27,5 @@ CLAUDE.md
 !hr_kg_gnn_skill_pack/references/local_manifest.csv
 !hr_kg_gnn_skill_pack/skills/hr-kg-gnn/references/references.csv
 !hr_kg_gnn_skill_pack/skills/hr-kg-gnn/references/local_manifest.csv
+.venv/
+*.egg-info/

@@ -21,3 +21,18 @@
 ### Notes
 
 - 当前 Python 环境未安装 PyTorch，GPU 空闲但 GNN 模型未完成训练。
+
+
+## [0.3.0] - 2026-06-04
+
+### Added
+
+- 使用 `uv` 创建 `.venv`，安装 Python 3.12 + `torch==2.12.0+cu130`，完成 Blackwell GPU 训练 smoke test。
+- 新增 `docs/algorithm_strategy.md`，说明算法路线、特征策略、baseline 策略、GNN 策略和训练策略。
+- 在 GPU 6 上完成 Rule/BM25/semantic_hash/LightGCN/SPC-HGT-lite 对比训练。
+
+### Results
+
+- SPC-HGT-lite: `NDCG@10 = 0.1310`。
+- Rule baseline: `NDCG@10 = 0.1211`。
+- SPC-HGT-lite 相对 Rule 提升约 `+8.2%`。
