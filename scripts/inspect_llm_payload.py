@@ -6,6 +6,9 @@ OpenAI-compatible chat completions endpoint.
 
 Run:
     python scripts/inspect_llm_payload.py
+
+Default output:
+    experiments/runs/llm_payload_inspection.json
 """
 
 from __future__ import annotations
@@ -99,7 +102,12 @@ def main() -> None:
 	parser.add_argument('--api-key', default='test-key')
 	parser.add_argument('--model', default='deepseek-chat')
 	parser.add_argument('--timeout', type=float, default=20.0)
-	parser.add_argument('--output', type=Path, default=None, help='Optional path to write captured JSON.')
+	parser.add_argument(
+		'--output',
+		type=Path,
+		default=Path('experiments/runs/llm_payload_inspection.json'),
+		help='Path to write captured JSON.',
+	)
 	args = parser.parse_args()
 
 	evidence = build_mock_evidence()
@@ -126,8 +134,9 @@ def main() -> None:
 		'explainer_result': result,
 	}
 	text = json.dumps(output, ensure_ascii=False, indent=2)
-	if args.output is not None:
-		args.output.write_text(text + '\n', encoding='utf-8')
+	args.output.parent.mkdir(parents=True, exist_ok=True)
+	args.output.write_text(text + '\n', encoding='utf-8')
+	print(f'wrote {args.output}')
 	print(text)
 
 
