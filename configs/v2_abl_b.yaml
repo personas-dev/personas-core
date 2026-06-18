@@ -1,0 +1,13 @@
+run_name: v2_abl_b
+output_dir: experiments/runs
+processed_dir: data/processed
+models:
+  - name: spc_hgt
+    label: wo_hard_neg
+    config: { device: cuda, use_hard_neg: false, epochs: 60, patience: 8, seeds: [42] }
+  - name: spc_hgt
+    label: wo_text
+    config: { device: cuda, use_text: false, epochs: 60, patience: 8, seeds: [42] }
+  - name: spc_hgt
+    label: wo_id_emb
+    config: { device: cuda, use_id: false, epochs: 60, patience: 8, seeds: [42] }

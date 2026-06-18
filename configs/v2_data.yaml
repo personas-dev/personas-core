@@ -1,0 +1,14 @@
+datasets_zip: data/datasets.zip
+processed_dir: data/processed
+skill_min_count: 2
+max_job_skills: 30
+max_user_skills: 64
+title_weight: 2.0
+max_desc_chars: 1200
+
+sbert:
+  model: /home/ubuntu/data/models/bge-small-zh-v1.5
+  batch_size: 512
+  device: cuda
+  max_seq_length: 256
+  query_prefix: "为这个句子生成表示以用于检索相关文章："

@@ -1,0 +1,13 @@
+run_name: v2_spc_hgt_ckpt
+output_dir: experiments/runs
+processed_dir: data/processed
+models:
+  - name: spc_hgt
+    label: spc_hgt_v2
+    config:
+      device: cuda
+      epochs: 60
+      patience: 8
+      use_hard_neg: false
+      checkpoint_path: experiments/runs/v2_spc_hgt/spc_hgt_v2.pt
+      seeds: [42]

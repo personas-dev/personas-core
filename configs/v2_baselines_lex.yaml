@@ -1,0 +1,7 @@
+run_name: v2_baselines
+output_dir: experiments/runs
+processed_dir: data/processed
+models:
+  - popularity
+  - rule
+  - bm25

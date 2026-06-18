@@ -1,0 +1,10 @@
+run_name: v2_abl_final_a
+output_dir: experiments/runs
+processed_dir: data/processed
+models:
+  - name: spc_hgt
+    label: final_wo_path
+    config: { device: cuda, use_hard_neg: false, use_path: false, epochs: 60, patience: 8, seeds: [42] }
+  - name: spc_hgt
+    label: final_wo_nce
+    config: { device: cuda, use_hard_neg: false, use_nce: false, epochs: 60, patience: 8, seeds: [42] }
