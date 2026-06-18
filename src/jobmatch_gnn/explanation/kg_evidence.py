@@ -25,6 +25,121 @@ class SkillWeight:
 	weight: float
 
 
+def _json_safe(value: object) -> object:
+	"""Convert numpy/pandas-ish values into JSON-friendly primitives."""
+
+	if isinstance(value, np.generic):
+		return value.item()
+	if isinstance(value, np.ndarray):
+		return [_json_safe(item) for item in value.tolist()]
+	if isinstance(value, (list, tuple, set)):
+		return [_json_safe(item) for item in value if item is not None and str(item) != '']
+	if value is None:
+		return None
+	return value
+
+
+def _attrs(**attributes: object) -> dict[str, object]:
+	return {key: _json_safe(value) for key, value in attributes.items() if value is not None and str(value) != ''}
+
+
+def _node(node_id: str, node_type: str, label: str, role: str, **attributes: object) -> dict[str, object]:
+	return {'id': node_id, 'type': node_type, 'label': label, 'role': role, 'attributes': _attrs(**attributes)}
+
+
+def _edge(source: str, target: str, relation: str, **attributes: object) -> dict[str, object]:
+	return {'source': source, 'target': target, 'relation': relation, 'attributes': _attrs(**attributes)}
+
+
+def _as_list(value: object) -> list[object]:
+	if value is None:
+		return []
+	if isinstance(value, np.ndarray):
+		return value.tolist()
+	if isinstance(value, (list, tuple, set)):
+		return list(value)
+	return [value]
+
+
+def build_local_subgraph(
+	user_id: str,
+	job_id: str,
+	job_title: str,
+	score: float,
+	matched_skills: list[SkillWeight],
+	missing_skills: list[str],
+	graph_paths: list[str],
+	reasons: list[str],
+	candidate_context: dict[str, object] | None = None,
+	job_context: dict[str, object] | None = None,
+	max_missing: int = 8,
+) -> dict[str, object]:
+	"""Build a compact local KG neighborhood around one candidate-job pair."""
+
+	candidate_context = candidate_context or {}
+	job_context = job_context or {}
+	candidate_node = f'candidate:{user_id}'
+	job_node = f'job:{job_id}'
+	nodes = [
+		_node(candidate_node, 'Candidate', user_id, 'query_candidate', **candidate_context),
+		_node(job_node, 'Job', job_title, 'recommended_job', job_id=job_id, score=round(float(score), 4), **job_context),
+	]
+	edges = [_edge(candidate_node, job_node, 'MATCHED_TO', score=round(float(score), 4))]
+	structured_paths: list[dict[str, object]] = []
+
+	for sw in matched_skills[:10]:
+		skill_node = f'skill:{sw.skill}'
+		nodes.append(_node(skill_node, 'Skill', sw.skill, 'matched_skill', attention=sw.weight))
+		edges.append(_edge(candidate_node, skill_node, 'HAS_SKILL', attention=sw.weight, status='matched'))
+		edges.append(_edge(job_node, skill_node, 'REQUIRES_SKILL', attention=sw.weight, status='matched'))
+		structured_paths.append(
+			{
+				'nodes': [candidate_node, skill_node, job_node],
+				'relations': ['HAS_SKILL', 'REQUIRES_SKILL'],
+				'support': 'matched_skill_attention',
+				'weight': sw.weight,
+			}
+		)
+
+	for skill in missing_skills[:max_missing]:
+		skill_node = f'skill:{skill}'
+		nodes.append(_node(skill_node, 'Skill', skill, 'missing_required_skill'))
+		edges.append(_edge(job_node, skill_node, 'REQUIRES_SKILL', status='missing_for_candidate'))
+
+	live_city = candidate_context.get('live_city')
+	desired_cities = _as_list(candidate_context.get('desired_cities'))
+	job_city = job_context.get('city')
+	for city in {str(city) for city in [live_city, job_city, *desired_cities] if city}:
+		city_node = f'city:{city}'
+		nodes.append(_node(city_node, 'City', city, 'context_city'))
+		if city == live_city:
+			edges.append(_edge(candidate_node, city_node, 'LIVES_IN'))
+		if city in desired_cities:
+			edges.append(_edge(candidate_node, city_node, 'DESIRES_CITY'))
+		if city == job_city:
+			edges.append(_edge(job_node, city_node, 'LOCATED_IN'))
+
+	desired_types = _as_list(candidate_context.get('desired_types'))
+	job_type = job_context.get('job_type')
+	for job_type_value in {str(value) for value in [job_type, *desired_types] if value}:
+		type_node = f'job_type:{job_type_value}'
+		nodes.append(_node(type_node, 'JobType', job_type_value, 'context_job_type'))
+		if job_type_value in desired_types:
+			edges.append(_edge(candidate_node, type_node, 'DESIRES_TYPE'))
+		if job_type_value == job_type:
+			edges.append(_edge(job_node, type_node, 'OF_TYPE'))
+
+	return {
+		'schema_version': 'local_kg_v1',
+		'focus_pair': {'candidate_id': user_id, 'job_id': job_id, 'job_title': job_title, 'score': round(float(score), 4)},
+		'nodes': nodes,
+		'edges': edges,
+		'graph_paths': graph_paths,
+		'structured_paths': structured_paths,
+		'reason_evidence': reasons,
+	}
+
+
 @dataclass
 class MatchEvidence:
 	"""Structured, fully faithful evidence for one candidate-job match."""
@@ -37,6 +152,7 @@ class MatchEvidence:
 	missing_skills: list[str] = field(default_factory=list)
 	graph_paths: list[str] = field(default_factory=list)
 	reasons: list[str] = field(default_factory=list)
+	local_subgraph: dict[str, object] = field(default_factory=dict)
 
 	def skill_whitelist(self) -> set[str]:
 		"""All skill strings the LLM is allowed to mention (faithfulness guard)."""
@@ -138,14 +254,43 @@ class EvidenceExtractor:
 		if job['job_type'] in set(user['desired_types']):
 			reasons.append('岗位类型符合求职意向')
 
-		paths = [f'候选人 → {sw.skill} ← 岗位' for sw in matched[:5]]
-		return MatchEvidence(
-			user_id=bundle.users.iloc[user_idx]['user_id'],
-			job_id=bundle.jobs.iloc[job_idx]['job_id'],
+		user_id = str(bundle.users.iloc[user_idx]['user_id'])
+		job_id = str(bundle.jobs.iloc[job_idx]['job_id'])
+		paths = [f'Candidate:{user_id} -HAS_SKILL({sw.weight})-> Skill:{sw.skill} <-REQUIRES_SKILL- Job:{job_id}' for sw in matched[:5]]
+		missing_skills = [self.skills[s] for s in missing[:12]]
+		candidate_context = {
+			'live_city': user['live_city'],
+			'desired_cities': list(user['desired_cities']),
+			'desired_types': list(user['desired_types']),
+			'degree_rank': user['degree_rank'],
+			'years': user['years'],
+		}
+		job_context = {
+			'city': job['city'],
+			'job_type': job['job_type'],
+			'min_degree_rank': job['min_degree_rank'],
+			'min_years': job['min_years'],
+		}
+		local_subgraph = build_local_subgraph(
+			user_id=str(user_id),
+			job_id=str(job_id),
 			job_title=str(job['title']),
 			score=round(score_val, 4),
 			matched_skills=matched,
-			missing_skills=[self.skills[s] for s in missing[:12]],
+			missing_skills=missing_skills,
 			graph_paths=paths,
 			reasons=reasons,
+			candidate_context=candidate_context,
+			job_context=job_context,
+		)
+		return MatchEvidence(
+			user_id=user_id,
+			job_id=job_id,
+			job_title=str(job['title']),
+			score=round(score_val, 4),
+			matched_skills=matched,
+			missing_skills=missing_skills,
+			graph_paths=paths,
+			reasons=reasons,
+			local_subgraph=local_subgraph,
 		)

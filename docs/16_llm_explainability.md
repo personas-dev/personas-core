@@ -74,7 +74,7 @@
 
 | 维度 | 直接用 KG(我们已有) | LLM API 生成 |
 |---|---|---|
-| 内容 | 结构化:matched_skills + 注意力权重、missing_skills、graph_paths、规则命中 | 自然语言段落:"推荐这个岗位是因为你的 X/Y 技能匹配,但需补充 Z" |
+| 内容 | 结构化:matched_skills + 注意力权重、missing_skills、graph_paths 摘要、local_subgraph 局部 KG、规则命中 | 自然语言段落:"推荐这个岗位是因为你的 X/Y 技能匹配,但需补充 Z" |
 | 忠实性 | **100% 忠实**(直接来自模型计算,无幻觉) | 有幻觉风险(文献明确:LLM 会编造 KG 中不存在的关系) |
 | 可读性 | 对开发者/HR 友好,对求职者偏生硬 | 对终端用户友好,流畅可读 |
 | 成本/延迟 | 近 0(本地计算) | 每条请求一次 API 调用,有延迟和费用 |
@@ -84,7 +84,7 @@
 
 文献高度一致(G-Refer WWW 2025、Faithful Path LM、"KG reduce hallucination" survey):
 - **直接让 LLM 自由解释(如 JobRecoGPT)会 fabrication**,把不存在的技能/关系写进解释,在招聘这种高风险场景不可接受。
-- **正确范式是 RAG/接地**:把我们 KG 模块已经算出的结构化证据(matched/missing skills + 注意力权重 + 真实图路径)作为**唯一事实来源**喂给 LLM,LLM 只负责"把结构化证据翻译成通顺的中文",并禁止引入证据外的内容。这样幻觉被 KG 钳制,流畅度由 LLM 提供。
+- **正确范式是 RAG/接地**:把我们 KG 模块已经算出的结构化证据(matched/missing skills + 注意力权重 + 真实图路径摘要 + 局部 KG 子图)作为**唯一事实来源**喂给 LLM,LLM 只负责"把结构化证据翻译成通顺的中文",并禁止引入证据外的内容。这样幻觉被 KG 钳制,流畅度由 LLM 提供。
 
 ### 3.3 哪种更好?——不是二选一,是分层
 
@@ -92,7 +92,7 @@
 
 ```text
 事实层(必须,本地,100% 忠实):
-  matched_skills[带权重] / missing_skills / graph_paths / rule_reasons
+  matched_skills[带权重] / missing_skills / graph_paths[摘要] / local_subgraph[nodes+edges] / rule_reasons
         │
         ├──→ 直接渲染为结构化卡片(默认输出,无 LLM 也完整可用)
         │
@@ -133,8 +133,8 @@
 
 代码:`src/jobmatch_gnn/explanation/`
 
-- `kg_evidence.py`:从训练好的 SPC-HGT v2 checkpoint 为任意 (user, job) 抽取**忠实证据**——共享技能及其路径注意力权重 α、缺口技能、真实图路径 `Candidate→Skill←Job`、规则命中项。纯本地计算,无幻觉。
-- `llm_explainer.py`:OpenAI 兼容 API 客户端。把证据序列化为受控 prompt,要求 LLM **只转述不新增**;返回后做**白名单忠实性校验**(解释中出现的技能必须在证据集合内),不通过则回退到模板化结构解释。无 API key 时自动走纯模板,保证可用。
+- `kg_evidence.py`:从训练好的 SPC-HGT v2 checkpoint 为任意 (user, job) 抽取**忠实证据**——共享技能及其路径注意力权重 α、缺口技能、真实图路径摘要 `Candidate→Skill←Job`、局部 KG 子图 `local_subgraph(nodes+edges+structured_paths)`、规则命中项。纯本地计算,无幻觉。
+- `llm_explainer.py`:OpenAI 兼容 API 客户端。把证据(含 matched/missing skills、graph_paths、local_subgraph、reasons)序列化为受控 prompt,要求 LLM **只转述不新增**;返回后做**白名单忠实性校验**(解释中出现的技能必须在证据集合内),不通过则回退到模板化结构解释。无 API key 时自动走纯模板,保证可用。
 - `explain_demo.py`:命令行 demo,对若干测试用户打印"结构化卡片 + (可选)LLM 段落 + 忠实性校验结果"。
 
 设计原则(与文献对齐):**KG 是事实唯一来源,LLM 只是可替换的表达层,忠实性可校验、可回退。**

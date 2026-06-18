@@ -26,33 +26,66 @@ SRC = ROOT / 'src'
 if str(SRC) not in sys.path:
 	sys.path.insert(0, str(SRC))
 
-from jobmatch_gnn.explanation.kg_evidence import MatchEvidence, SkillWeight  # noqa: E402
+from jobmatch_gnn.explanation.kg_evidence import MatchEvidence, SkillWeight, build_local_subgraph  # noqa: E402
 from jobmatch_gnn.explanation.llm_explainer import GroundedExplainer, set_global_skill_vocab  # noqa: E402
 
 
 def build_mock_evidence() -> MatchEvidence:
 	"""Return deterministic evidence that resembles one ranked job result."""
 
+	user_id = 'mock_user_001'
+	job_id = 'mock_job_9001'
+	job_title = '推荐算法工程师'
+	score = 2.7183
+	matched_skills = [
+		SkillWeight('python', 0.42),
+		SkillWeight('机器学习', 0.31),
+		SkillWeight('mysql', 0.16),
+	]
+	missing_skills = ['召回排序', '特征工程', 'docker']
+	graph_paths = [
+		'Candidate:mock_user_001 -HAS_SKILL(0.42)-> Skill:python <-REQUIRES_SKILL- Job:mock_job_9001',
+		'Candidate:mock_user_001 -HAS_SKILL(0.31)-> Skill:机器学习 <-REQUIRES_SKILL- Job:mock_job_9001',
+		'Job:mock_job_9001 -REQUIRES_SKILL-> Skill:召回排序 (missing_for_candidate)',
+	]
+	reasons = [
+		'技能覆盖率 50%(3/6 项要求技能匹配)',
+		'工作城市符合期望',
+		'工作年限满足岗位要求',
+	]
+	local_subgraph = build_local_subgraph(
+		user_id=user_id,
+		job_id=job_id,
+		job_title=job_title,
+		score=score,
+		matched_skills=matched_skills,
+		missing_skills=missing_skills,
+		graph_paths=graph_paths,
+		reasons=reasons,
+		candidate_context={
+			'live_city': '上海',
+			'desired_cities': ['上海', '杭州'],
+			'desired_types': ['算法工程师', '后端开发'],
+			'degree_rank': 4,
+			'years': 3,
+		},
+		job_context={
+			'city': '上海',
+			'job_type': '算法工程师',
+			'min_degree_rank': 4,
+			'min_years': 2,
+		},
+	)
 	return MatchEvidence(
-		user_id='mock_user_001',
-		job_id='mock_job_9001',
-		job_title='推荐算法工程师',
-		score=2.7183,
-		matched_skills=[
-			SkillWeight('python', 0.42),
-			SkillWeight('机器学习', 0.31),
-			SkillWeight('mysql', 0.16),
-		],
-		missing_skills=['召回排序', '特征工程', 'docker'],
-		graph_paths=[
-			'候选人 -> python <- 岗位',
-			'候选人 -> 机器学习 <- 岗位',
-		],
-		reasons=[
-			'技能覆盖率 50%(3/6 项要求技能匹配)',
-			'工作城市符合期望',
-			'工作年限满足岗位要求',
-		],
+		user_id=user_id,
+		job_id=job_id,
+		job_title=job_title,
+		score=score,
+		matched_skills=matched_skills,
+		missing_skills=missing_skills,
+		graph_paths=graph_paths,
+		reasons=reasons,
+		local_subgraph=local_subgraph,
 	)
 
 

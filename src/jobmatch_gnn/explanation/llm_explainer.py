@@ -21,7 +21,7 @@ from jobmatch_gnn.explanation.kg_evidence import MatchEvidence
 SYSTEM_PROMPT = (
 	'你是招聘推荐系统的解释助手。你只能基于给定的结构化证据(JSON)生成解释,'
 	'严禁编造证据中不存在的技能、岗位或事实。'
-	'输出 2-4 句中文:先说明为什么推荐这个岗位(引用匹配技能与匹配理由),'
+	'输出 2-4 句中文:先说明为什么推荐这个岗位(引用 matched_skills、reasons 或 local_subgraph),'
 	'再客观指出候选人需要补充的关键技能(来自 missing_skills)。'
 	'不要输出 JSON,不要列表,只输出自然语言段落。'
 )
@@ -128,9 +128,11 @@ class GroundedExplainer:
 		evidence_payload = json.dumps(
 			{
 				'job_title': ev.job_title,
-				'matched_skills': [sw.skill for sw in ev.matched_skills],
+				'matched_skills': [{'skill': sw.skill, 'weight': sw.weight} for sw in ev.matched_skills],
 				'missing_skills': ev.missing_skills,
+				'graph_paths': ev.graph_paths,
 				'reasons': ev.reasons,
+				'local_subgraph': ev.local_subgraph,
 			},
 			ensure_ascii=False,
 		)

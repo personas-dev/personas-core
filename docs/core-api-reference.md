@@ -30,7 +30,7 @@
 - 前端若要展示可解释 LLM 结果，必须在 `options` 中传 `include_explanations=true` 和 `include_llm_explanation=true`
 - 前端不需要自行拼装解释文案；应展示 Core 返回的 `highlight`、`reason` 或 `explanation.llm.html`，并保留 `matched_skills`、`missing_skills` 用于可视化展开
 - LLM 不可编造事实；如果 LLM 不可用或未通过忠实性检查，Core 必须返回模板兜底解释，`source` 标记为 `template` 或 `template_fallback_unfaithful`
-- LLM 解释必须从 `matched_skills`、`missing_skills`、`graph_paths`、`reasons` 生成；不得引入 evidence 中不存在的技能、公司、薪资或岗位要求
+- LLM 解释必须从 `matched_skills`、`missing_skills`、`graph_paths`、`local_subgraph`、`reasons` 生成；不得引入 evidence 中不存在的技能、公司、薪资或岗位要求
 
 ## 接口一：POST /api/v1/recommend/jobs
 
@@ -200,10 +200,23 @@
 | --- | --- | --- | --- |
 | matched_skills | WeightedSkill[] | 是 | 候选人与岗位共同命中的技能，按注意力或权重降序 |
 | missing_skills | string[] | 是 | 岗位需要但候选人画像中未命中的技能 |
-| graph_paths | string[] | 是 | 可解释 KG 路径，如 `候选人 -> python <- 岗位` |
+| graph_paths | string[] | 是 | 可读路径摘要，如 `Candidate:u1 -HAS_SKILL(0.6)-> Skill:python <-REQUIRES_SKILL- Job:j1` |
+| local_subgraph | LocalSubgraph | 是 | 候选人-岗位匹配的局部知识图谱，包含节点、边、结构化路径和规则证据 |
 | reasons | string[] | 是 | 规则或结构化匹配理由，如城市、学历、年限、技能覆盖率 |
 | rule_features | object | 否 | 调试用规则特征，`include_debug_evidence=true` 时返回 |
 | llm | LLMExplanation | 否 | LLM 或模板生成的展示解释 |
+
+### LocalSubgraph
+
+| 字段 | 类型 | 必填 | 说明 |
+| --- | --- | --- | --- |
+| schema_version | string | 是 | 局部子图 schema 版本，如 `local_kg_v1` |
+| focus_pair | object | 是 | 当前候选人-岗位对，包含 candidate_id、job_id、job_title、score |
+| nodes | object[] | 是 | 局部 KG 节点，至少包含 Candidate、Job、Skill，可包含 City、JobType |
+| edges | object[] | 是 | 局部 KG 边，如 `HAS_SKILL`、`REQUIRES_SKILL`、`LOCATED_IN`、`DESIRES_TYPE` |
+| graph_paths | string[] | 是 | 与 `ExplanationPayload.graph_paths` 同步的可读路径摘要 |
+| structured_paths | object[] | 是 | 机器可读路径，包含节点序列、关系序列、support 和 weight |
+| reason_evidence | string[] | 是 | 与 rules/reasons 对齐的结构化证据摘要 |
 
 ### WeightedSkill
 
@@ -275,7 +288,24 @@
       {"skill": "机器学习", "weight": 0.31}
     ],
     "missing_skills": ["召回排序", "特征工程"],
-    "graph_paths": ["候选人 -> python <- 岗位"],
+    "graph_paths": ["Candidate:u_1001 -HAS_SKILL(0.42)-> Skill:python <-REQUIRES_SKILL- Job:j_9001"],
+    "local_subgraph": {
+      "schema_version": "local_kg_v1",
+      "focus_pair": {"candidate_id": "u_1001", "job_id": "j_9001", "job_title": "推荐算法工程师", "score": 86},
+      "nodes": [
+        {"id": "candidate:u_1001", "type": "Candidate", "label": "u_1001", "role": "query_candidate", "attributes": {}},
+        {"id": "job:j_9001", "type": "Job", "label": "推荐算法工程师", "role": "recommended_job", "attributes": {}},
+        {"id": "skill:python", "type": "Skill", "label": "python", "role": "matched_skill", "attributes": {"attention": 0.42}}
+      ],
+      "edges": [
+        {"source": "candidate:u_1001", "target": "skill:python", "relation": "HAS_SKILL", "attributes": {"attention": 0.42, "status": "matched"}},
+        {"source": "job:j_9001", "target": "skill:python", "relation": "REQUIRES_SKILL", "attributes": {"attention": 0.42, "status": "matched"}}
+      ],
+      "structured_paths": [
+        {"nodes": ["candidate:u_1001", "skill:python", "job:j_9001"], "relations": ["HAS_SKILL", "REQUIRES_SKILL"], "support": "matched_skill_attention", "weight": 0.42}
+      ],
+      "reason_evidence": ["技能覆盖率 50%"]
+    },
     "reasons": ["技能覆盖率 50%", "工作城市符合期望城市"],
     "llm": {
       "html": "<div class=\"llm-explanation\"><p>推荐岗位「推荐算法工程师」：你的技能 python、机器学习与该岗位要求匹配。</p></div>",
