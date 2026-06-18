@@ -15,6 +15,9 @@
 - 业务标识符：使用 string 类型
 - 请求追踪：通过 `X-Request-ID` 请求头传入，Core 日志应记录该值
 - 错误响应：使用标准 HTTP 状态码，响应体包含 `detail` 字段（string 或校验错误列表），不得包含密钥、堆栈、真实文件路径
+- `id` 字段统一使用 string 类型，Backend 负责与前端 integer 的映射
+- Core 必须先完成召回、过滤和排序，再根据 `page` / `page_size` 截取结果并计算 `pagination.total`
+- `items` 必须已按 `options.sort_by` 排序返回，Backend 不做二次排序或分页
 
 ## LLM HTML 解释约定
 
@@ -24,7 +27,10 @@
 - 兼容便捷字段：`item.llm_explanation_html`，内容等同于 `item.explanation.llm.html`
 - HTML 允许标签：`div`、`p`、`strong`、`span`、`ul`、`li`、`br`
 - HTML 禁止内容：`script`、`style`、`iframe`、内联事件属性（如 `onclick`）、外链脚本、未转义的用户原文
+- 前端若要展示可解释 LLM 结果，必须在 `options` 中传 `include_explanations=true` 和 `include_llm_explanation=true`
+- 前端不需要自行拼装解释文案；应展示 Core 返回的 `highlight`、`reason` 或 `explanation.llm.html`，并保留 `matched_skills`、`missing_skills` 用于可视化展开
 - LLM 不可编造事实；如果 LLM 不可用或未通过忠实性检查，Core 必须返回模板兜底解释，`source` 标记为 `template` 或 `template_fallback_unfaithful`
+- LLM 解释必须从 `matched_skills`、`missing_skills`、`graph_paths`、`reasons` 生成；不得引入 evidence 中不存在的技能、公司、薪资或岗位要求
 
 ## 接口一：POST /api/v1/recommend/jobs
 
@@ -71,6 +77,8 @@
 | explanation | ExplanationPayload | 否 | KG 事实证据和 LLM 展示解释 |
 | llm_explanation_html | string | 否 | 兼容便捷字段，等同 `explanation.llm.html` |
 
+说明：`include_explanations=false` 时可以省略 `explanation`、`match_details`、`matched_keywords`、`algorithm`，但不得省略 `level`、`highlight` 等卡片展示必填字段。
+
 ## 接口二：POST /api/v1/recommend/candidates
 
 岗找人推荐。接收岗位画像，返回候选人推荐结果。
@@ -116,11 +124,13 @@
 | explanation | ExplanationPayload | 否 | KG 事实证据和 LLM 展示解释 |
 | llm_explanation_html | string | 否 | 兼容便捷字段，等同 `explanation.llm.html` |
 
+说明：`include_explanations=false` 时可以省略 `explanation`、`match_details`、`matched_keywords`、`algorithm`，但不得省略 `reason`、`tags` 等卡片展示必填字段。
+
 ## DTO 定义
 
 ### CandidateProfile（求职者画像）
 
-SPC-HGT v2 至少需要文本或技能之一；为了达到当前离线评测效果，前端应同时提供规范化技能、城市和岗位类型。
+旧协议中的 `skills`、`experience_text`、`desired_cities`、`desired_roles`、`degree`、`years_experience` 可以支撑基础规则排序和部分 v2 特征，但要稳定复现当前 SPC-HGT v2 输入，前端应同时提供规范化技能、城市 ID、岗位类型、学历等级和工作年限。城市字段优先传 `desired_city_ids`、`current_city_id`；岗位方向字段建议由旧 `desired_roles` 迁移为 `desired_type_ids` + `desired_job_types`；技能字段优先使用 Core 技能词表中的规范化标签。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -143,7 +153,7 @@ SPC-HGT v2 至少需要文本或技能之一；为了达到当前离线评测效
 
 ### JobProfile（岗位画像）
 
-岗找人和临时岗位召回需要岗位文本、岗位技能、城市、岗位类型、最低学历和最低年限。`description` 与 `required_skills` 至少提供一项，推荐都提供。
+旧协议中的 `description`、`required_skills` 可以支撑基础规则排序和部分 v2 特征，但岗找人和临时岗位召回需要岗位文本、规范化技能、城市 ID、岗位类型、最低学历和最低年限。`description` 与 `required_skills` 至少提供一项，推荐都提供；岗位侧建议传 `city_id`、`job_type_id`、`min_degree_rank`、`min_years`，仅传展示文本时 Core 会尝试解析或映射。
 
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
@@ -182,7 +192,7 @@ SPC-HGT v2 至少需要文本或技能之一；为了达到当前离线评测效
 | explanation_language | string | 否 | zh-CN | 解释语言，目前支持 `zh-CN` |
 | include_debug_evidence | boolean | 否 | false | 是否返回调试级特征；生产环境默认关闭 |
 
-排序方向：`match` 按匹配度降序，`salary` 按薪资上界降序，`experience` 按经验年限降序。
+排序方向：`match` 按匹配度降序，`salary` 按薪资上界降序，`experience` 按经验年限降序。`include_llm_explanation=false` 时必须保留结构化解释字段（若 `include_explanations=true`），但可以省略 `explanation.llm` 和 `llm_explanation_html`。
 
 ### ExplanationPayload（解释结果）
 
@@ -276,25 +286,3 @@ SPC-HGT v2 至少需要文本或技能之一；为了达到当前离线评测效
   "llm_explanation_html": "<div class=\"llm-explanation\"><p>推荐岗位「推荐算法工程师」：你的技能 python、机器学习与该岗位要求匹配。</p></div>"
 }
 ```
-
-## 前端字段满足性检查结论
-
-当前前端协议中的 `skills`、`experience_text`、`desired_cities`、`desired_roles`、`degree`、`years_experience`、`description`、`required_skills` 可以支撑基础规则排序和部分 v2 特征，但还不能稳定复现当前 SPC-HGT v2 的算法输入。
-
-需要前端补充或调整的字段如下：
-
-1. 城市字段需要从展示名升级为规范化 ID：人找岗传 `desired_city_ids`、`current_city_id`；岗找人传 `city_id`。仅传中文城市名时，Core 会映射，但映射失败会降低城市特征质量。
-2. 岗位方向字段需要对齐岗位类型：旧 `desired_roles` 建议迁移为 `desired_type_ids` + `desired_job_types`；岗位侧建议传 `job_type_id` + `job_type`。
-3. 技能字段需要使用 Core 技能词表中的规范化标签：人侧 `skills` 最多 64 个，岗位侧 `required_skills` 最多 30 个。若只传自然语言文本，Core 可抽取技能，但效果会弱于直接传规范化标签。
-4. 学历和年限建议传可计算字段：人侧 `degree_rank`、`years_experience`；岗位侧 `min_degree_rank`、`min_years`。只传展示文本时 Core 会尝试解析。
-5. 前端若要展示可解释 LLM 结果，必须在 `options` 中传 `include_explanations=true` 和 `include_llm_explanation=true`，并读取 `explanation.llm.html`。
-6. 前端不需要自行拼装解释文案；应展示 Core 返回的 `highlight`、`reason` 或 `explanation.llm.html`，并保留 `matched_skills`、`missing_skills` 用于可视化展开。
-
-## Core 实现约束备注
-
-- `id` 字段使用 string 类型，Backend 负责与前端 integer 的映射
-- `items` 必须已按 `options.sort_by` 排序返回，Backend 不做二次排序或分页
-- `include_explanations=false` 时可以省略 `explanation`、`match_details`、`matched_keywords`、`algorithm`，不得省略 `level`、`highlight`、`reason` 等卡片展示必填字段
-- `include_llm_explanation=false` 时必须保留结构化解释字段（若 `include_explanations=true`），但可以省略 `explanation.llm` 和 `llm_explanation_html`
-- Core 必须先完成召回、过滤和排序，再根据 page/page_size 截取结果并计算 `pagination.total`
-- LLM 解释必须从 `matched_skills`、`missing_skills`、`graph_paths`、`reasons` 生成；不得引入 evidence 中不存在的技能、公司、薪资或岗位要求
