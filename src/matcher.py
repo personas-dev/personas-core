@@ -183,6 +183,18 @@ def match_candidates_to_job(
 	return scored
 
 
+def get_hot_jobs() -> list[tuple[dict, int, list[str]]]:
+	"""返回全量 mock 岗位数据，每条附带默认热门分与固定推荐原因。"""
+	jobs = _load_json('jobs.json')
+	return [(job, job.get('match', 85), ['热门推荐']) for job in jobs]
+
+
+def get_hot_candidates() -> list[tuple[dict, int, list[str]]]:
+	"""返回全量 mock 候选人数据，每条附带默认热门分与固定推荐原因。"""
+	candidates = _load_json('candidates.json')
+	return [(cand, cand.get('match', 85), ['热门推荐']) for cand in candidates]
+
+
 def paginate(
 	items: list[tuple[dict, int, list[str]]],
 	page: int,
