@@ -6,6 +6,91 @@ max_user_skills: 64
 title_weight: 2.0
 max_desc_chars: 1200
 
+skill_quality:
+  enabled: true
+  reference_path: data/external/osta_reference_terms.json
+  english_min_len: 3
+  strict_ascii_boundaries: true
+  drop_occupation_terms: true
+  short_english_allowlist:
+    - ai
+    - bi
+    - c
+    - c#
+    - c++
+    - cv
+    - go
+    - hr
+    - js
+    - ml
+    - nlp
+    - oa
+    - os
+    - pm
+    - qa
+    - qc
+    - r
+    - ts
+    - ui
+    - ux
+  drop_terms:
+    - 自我评价
+    - 协助
+    - 客户
+    - 材料
+    - 资料
+    - 学历
+    - 经理
+    - 员工
+    - 福利
+    - 管理
+    - 管理工作
+    - 工作
+    - 岗位
+    - 职位
+    - 职责
+    - 任职
+    - 要求
+    - 经验
+    - 相关
+    - 以上
+    - 优先
+    - 熟悉
+    - 负责
+    - 参与
+    - 完成
+    - or
+    - ex
+    - cc
+    - em
+  transversal_terms:
+    - 沟通
+    - 沟通能力
+    - 协调
+    - 协调能力
+    - 组织
+    - 组织能力
+    - 计划
+    - 计划能力
+    - 团队
+    - 团队合作
+    - 团队协作
+    - 团队领导
+    - 领导
+    - 执行
+    - 执行力
+    - 责任心
+    - 服务意识
+    - 学习能力
+    - 抗压能力
+    - 表达能力
+    - 办公
+  type_weights:
+    hard_or_knowledge: 1.0
+    reference_task: 1.0
+    transversal: 0.35
+    unknown: 0.7
+
 sbert:
   model: /home/ubuntu/data/models/bge-small-zh-v1.5
   batch_size: 512

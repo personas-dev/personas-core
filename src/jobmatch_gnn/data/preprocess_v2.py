@@ -20,6 +20,7 @@ import pandas as pd
 import yaml
 
 from jobmatch_gnn.data.dataset import clean_token, degree_rank, normalize_value, parse_years
+from jobmatch_gnn.data.skill_quality import SkillQualityGate
 
 MISSING = {"", "-", "-1", "\\n", "null", "none", "nan"}
 
@@ -53,12 +54,15 @@ def _split_tags(value: str) -> list[str]:
     return out
 
 
-def build_skill_vocab(user_rows: list[dict], min_count: int) -> dict[str, int]:
+def build_skill_vocab(user_rows: list[dict], min_count: int, quality: SkillQualityGate | None = None) -> dict[str, int]:
     """Build the skill vocabulary from user experience tags (docs/11 S1-S2)."""
 
     counter: Counter[str] = Counter()
     for row in user_rows:
-        counter.update(_split_tags(normalize_value(row.get("experience"))))
+        tags = _split_tags(normalize_value(row.get("experience")))
+        if quality is not None:
+            tags = [tag for tag in tags if quality.keep_vocab_token(tag)]
+        counter.update(tags)
     kept = sorted(tag for tag, count in counter.items() if count >= min_count)
     return {tag: idx for idx, tag in enumerate(kept)}
 
@@ -68,7 +72,8 @@ def build_automaton(vocab: dict[str, int]) -> ahocorasick.Automaton:
 
     automaton = ahocorasick.Automaton()
     for tag, idx in vocab.items():
-        automaton.add_word(tag.lower(), (idx, len(tag)))
+        normalized = tag.lower()
+        automaton.add_word(normalized, (idx, normalized, len(normalized)))
     automaton.make_automaton()
     return automaton
 
@@ -79,6 +84,7 @@ def match_job_skills(
     description: str,
     max_skills: int,
     title_weight: float,
+    quality: SkillQualityGate | None = None,
 ) -> list[tuple[int, float]]:
     """Extract weighted vocabulary skills from job text (docs/11 S3-S4)."""
 
@@ -86,8 +92,12 @@ def match_job_skills(
     for text, weight in ((title.lower(), title_weight), (description.lower(), 1.0)):
         if not text:
             continue
-        for _, (skill_idx, length) in automaton.iter(text):
-            scores[skill_idx] += weight * (1.0 + 0.1 * length)
+        for end, (skill_idx, token, length) in automaton.iter(text):
+            start = end - length + 1
+            if quality is not None and not quality.valid_text_match(text, start, end, token):
+                continue
+            multiplier = quality.match_weight(token) if quality is not None else 1.0
+            scores[skill_idx] += multiplier * weight * (1.0 + 0.1 * length)
     top = sorted(scores.items(), key=lambda item: -item[1])[:max_skills]
     return [(idx, round(score, 3)) for idx, score in top]
 
@@ -102,10 +112,12 @@ def run(config_path: Path) -> None:
     max_user_skills = int(config.get("max_user_skills", 64))
     title_weight = float(config.get("title_weight", 2.0))
     max_desc_chars = int(config.get("max_desc_chars", 1200))
+    quality_gate = SkillQualityGate.from_config(config.get("skill_quality"))
+    quality = quality_gate if quality_gate.config.enabled else None
 
     print("[1/5] reading users ...", flush=True)
     user_rows = list(_read_rows(data_zip, "datasets/table1_user.txt"))
-    vocab = build_skill_vocab(user_rows, min_count=min_count)
+    vocab = build_skill_vocab(user_rows, min_count=min_count, quality=quality)
     automaton = build_automaton(vocab)
     print(f"  users={len(user_rows)} skill_vocab={len(vocab)}", flush=True)
 
@@ -115,6 +127,8 @@ def run(config_path: Path) -> None:
         if not user_id:
             continue
         tags = _split_tags(normalize_value(row.get("experience")))
+        if quality is not None:
+            tags = [tag for tag in tags if quality.keep_vocab_token(tag)]
         skill_ids = [vocab[t] for t in tags if t in vocab][:max_user_skills]
         desired_types = _split_tags(normalize_value(row.get("desire_jd_type_id")))
         industries = _split_tags(normalize_value(row.get("desire_jd_industry_id"))) + _split_tags(
@@ -173,7 +187,7 @@ def run(config_path: Path) -> None:
             continue
         title = normalize_value(row.get("jd_title"))
         description = normalize_value(row.get("job_description"))[:max_desc_chars]
-        skills = match_job_skills(automaton, title, description, max_job_skills, title_weight)
+        skills = match_job_skills(automaton, title, description, max_job_skills, title_weight, quality=quality)
         jobs.append(
             {
                 "job_id": job_id,
@@ -221,6 +235,7 @@ def run(config_path: Path) -> None:
         "skill_vocab": len(vocab),
         "avg_job_skills": float(jobs_df["skill_ids"].map(len).mean()),
         "avg_user_skills": float(users_df["skill_ids"].map(len).mean()),
+        "skill_quality": quality_gate.summary(),
         "config": config,
     }
     (out_dir / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
