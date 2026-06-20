@@ -1,0 +1,20 @@
+run_name: v2_osta_job20_baselines
+output_dir: experiments/runs
+processed_dir: data/processed
+
+models:
+  - popularity
+  - rule
+  - bm25
+  - name: sbert
+    config:
+      device: cuda
+  - name: lightgcn
+    config:
+      device: cuda
+      dim: 128
+      layers: 3
+      lr: 0.001
+      batch: 8192
+      epochs: 120
+      l2: 1.0e-5

@@ -112,3 +112,74 @@ SPC-HGT 本次配置:
 3. 对 job skill 增加类型限额:每个 job 最多保留 3 个 `transversal`,最多保留 2 个 `generic_low_signal`。
 4. 降低 `max_job_skills` 从 30 到 20 或引入动态阈值,避免大量岗位仍卡在 30 个技能上。
 5. 完成 3 seeds SPC-HGT 复评后再更新 `docs/15_results_v2.md` 的主结果。
+
+## 7. `max_job_skills=20` 复验
+
+已执行第 6 节第 4 项,选择把 `configs/v2_data.yaml` 中的 `max_job_skills` 从 30 降到 20,并新增独立实验配置:
+
+- `configs/v2_osta_job20_baselines.yaml`
+- `configs/v2_osta_job20_spc_hgt.yaml`
+
+复验命令:
+
+```bash
+.venv/bin/python -m jobmatch_gnn.data.preprocess_v2 --config configs/v2_data.yaml
+CUDA_VISIBLE_DEVICES=2 .venv/bin/python -m jobmatch_gnn.text.encode_sbert --config configs/v2_data.yaml
+CUDA_VISIBLE_DEVICES=2 .venv/bin/python -m jobmatch_gnn.training.train_v2 --config configs/v2_osta_job20_baselines.yaml
+CUDA_VISIBLE_DEVICES=7 .venv/bin/python -m jobmatch_gnn.training.train_v2 --config configs/v2_osta_job20_spc_hgt.yaml
+```
+
+运行目录:
+
+- `experiments/runs/v2_osta_job20_baselines`
+- `experiments/runs/v2_osta_job20_spc_hgt`
+
+### 7.1 KG 密度变化
+
+| 指标 | OSTA job30 | OSTA job20 | 变化 |
+|---|---:|---:|---:|
+| skill_vocab | 4,634 | 4,634 | 0 |
+| avg_user_skills | 32.09 | 32.09 | 0 |
+| avg_job_skills | 26.60 | 18.94 | -28.8% |
+| zero-skill jobs | 63 | 63 | 0 |
+| job-skill edges | 约 2.43M | 1.73M | -28.8% |
+
+岗位技能数量分位数显示,job20 版仍有大量岗位到达上限:
+
+| 分位数 | 0% | 25% | 50% | 75% | 90% | 95% | 99% |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| job skill count | 0 | 20 | 20 | 20 | 20 | 20 | 20 |
+
+判断:降低上限有效解决了“岗位技能边过密”和“大量岗位卡 30 个技能”的问题,但只是把饱和点移动到 20;它不能单独解决技能本体中 `业务/处理/活动/服务/熟练/理工` 等泛词质量问题。
+
+### 7.2 模型结果
+
+测试协议仍为全库排序,4,095 个 test users。job20 结果为 seed 42 单次运行。
+
+| 模型 | OSTA job30 NDCG@10 | OSTA job20 NDCG@10 | job20 Recall@10 | job20 Recall@50 | job20 MRR |
+|---|---:|---:|---:|---:|---:|
+| Popularity | 0.0016 | 0.0016 | 0.0039 | 0.0164 | 0.0019 |
+| SBERT | 0.0028 | 0.0028 | 0.0049 | 0.0149 | 0.0031 |
+| BM25 | 0.0049 | 0.0049 | 0.0090 | 0.0278 | 0.0050 |
+| Rule | 0.0113 | 0.0116 | 0.0256 | 0.1001 | 0.0126 |
+| LightGCN | 0.0224 | 0.0224 | 0.0425 | 0.1021 | 0.0199 |
+| SPC-HGT | 0.0258 | 0.0267 | 0.0508 | 0.1206 | 0.0248 |
+
+SPC-HGT job20 配置:
+
+- `configs/v2_osta_job20_spc_hgt.yaml`
+- seed 42 only
+- `epochs=60`, `patience=8`, `use_hard_neg=false`
+- best valid NDCG@10 = 0.0267
+- test NDCG@10 = 0.0267
+- runtime = 899.9s
+
+### 7.3 结论
+
+1. `max_job_skills=20` 达到了降密度目标:avg_job_skills 从 26.60 降到 18.94,job-skill edges 从约 2.43M 降到 1.73M。
+2. 排序效果没有下降:SPC-HGT NDCG@10 从 0.0258 提升到 0.0267,Recall@10 从 0.0498 提升到 0.0508。
+3. 主模型仍强于最强 baseline:job20 SPC-HGT 0.0267 vs LightGCN 0.0224,相对提升约 +19.2%。
+4. job20 单 seed 已接近 `docs/15_results_v2.md` 的 v2 原始 KG 三 seed 均值 0.0266,但尚不能替代主结果;需要完成 3 seeds 后再更新主结果文档。
+5. 泛词问题仍存在:降上限控制的是图密度,不是技能语义质量。下一步仍应执行类型限额和第二批泛词审核,尤其是 `业务`, `处理`, `活动`, `服务`, `熟练`, `理工`, `专员`, `招聘`。
+
+当前建议:把 `max_job_skills=20` 保留为 OSTA 清洗 KG 的下一轮默认设置,并在此基础上继续做技能类型限额与泛词抑制。

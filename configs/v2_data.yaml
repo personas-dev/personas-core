@@ -1,7 +1,7 @@
 datasets_zip: data/datasets.zip
 processed_dir: data/processed
 skill_min_count: 2
-max_job_skills: 30
+max_job_skills: 20
 max_user_skills: 64
 title_weight: 2.0
 max_desc_chars: 1200

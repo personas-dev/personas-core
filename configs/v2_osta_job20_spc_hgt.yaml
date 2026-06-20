@@ -1,0 +1,21 @@
+run_name: v2_osta_job20_spc_hgt
+output_dir: experiments/runs
+processed_dir: data/processed
+
+models:
+  - name: spc_hgt
+    label: spc_hgt_v2_osta_job20
+    config:
+      device: cuda
+      dim: 128
+      lr: 0.001
+      weight_decay: 1.0e-5
+      batch: 2048
+      epochs: 60
+      warmup_epochs: 3
+      neg_per_pos: 4
+      lambda_bce: 0.2
+      lambda_nce: 0.1
+      patience: 8
+      use_hard_neg: false
+      seeds: [42]
