@@ -33,6 +33,10 @@ def run_model(name: str, bundle, model_cfg: dict, eval_users: list[int]):
         from jobmatch_gnn.models.lightgcn_v2 import train_lightgcn_v2
 
         return train_lightgcn_v2(bundle, model_cfg, eval_users)
+    if name == "pjfcann":
+        from jobmatch_gnn.models.pjfcann_v2 import train_pjfcann_v2
+
+        return train_pjfcann_v2(bundle, model_cfg, eval_users)
     if name.startswith("spc_hgt"):
         from jobmatch_gnn.training.train_spc_hgt_v2 import train_spc_hgt_v2
 

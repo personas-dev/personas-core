@@ -1,0 +1,26 @@
+run_name: v2_pjfcann
+output_dir: experiments/runs
+processed_dir: data/processed
+
+models:
+  - name: pjfcann
+    label: pjfcann_v2_adapted
+    config:
+      device: cuda
+      dim: 128
+      layers: 2
+      dropout: 0.2
+      lr: 0.001
+      weight_decay: 1.0e-5
+      batch: 4096
+      epochs: 50
+      patience: 8
+      neg_per_pos: 4
+      lambda_bpr: 1.0
+      valid_users: 1500
+      valid_topn: 200
+      valid_recall_k: 200
+      topn: 1000
+      recall_k: 1000
+      pair_batch: 8192
+      seeds: [42]
